@@ -1,0 +1,22 @@
+# Laravel Backend Files
+/laravel scrapper/html-processor-api/node_modules
+/laravel scrapper/html-processor-api/public/hot
+/laravel scrapper/html-processor-api/public/storage
+/laravel scrapper/html-processor-api/storage/*.key
+/laravel scrapper/html-processor-api/vendor
+/laravel scrapper/html-processor-api/.env
+/laravel scrapper/html-processor-api/.env.backup
+/laravel scrapper/html-processor-api/npm-debug.log
+/laravel scrapper/html-processor-api/yarn-error.log
+
+# Python Files
+/laravel scrapper/html-processor-api/venv
+/laravel scrapper/html-processor-api/scripts/__pycache__
+/laravel scrapper/html-processor-api/scripts/*.log
+
+# Scraped Data (Do not upload)
+/laravel scrapper/html-processor-api/storage/app/scraped_pages/
+/laravel scrapper/html-processor-api/storage/app/last_profile.json
+
+# General
+.DS_Store
