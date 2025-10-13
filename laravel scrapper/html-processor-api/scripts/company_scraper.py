@@ -9,8 +9,6 @@ from bs4 import BeautifulSoup
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-
-
 def clean(content):
     """
     Cleans text by preserving line breaks, fixing encoding errors,
@@ -22,31 +20,25 @@ def clean(content):
     text = ""
     # If content is a BeautifulSoup tag, process it to preserve line breaks
     if hasattr(content, 'find_all'):
-        # Convert <br> tags to a simple newline
         for br in content.find_all("br"):
             br.replace_with("\n")
-        # Get text, using a newline as a separator for block tags like <p> and <li>
         text = content.get_text(separator="\n", strip=True)
     else:
         text = str(content)
 
-    # Fix any potential encoding errors in the scraped text
+    # Fix any potential encoding errors
     cleaned_content = text.encode('utf-8', 'replace').decode('utf-8')
 
-    # Replace multiple spaces and tabs, but keep the newlines
+    # Replace multiple spaces/tabs, but keep the newlines
     text = re.sub(r'[ \t]+', ' ', cleaned_content)
-    # Condense multiple newlines into a maximum of two (a paragraph break)
+    # Condense multiple newlines into a maximum of two
     text = re.sub(r'\n{3,}', '\n\n', text.strip())
     
-    # Remove common junk phrases
     junk_phrases = ["Skip to main content", "See more", "...see more"]
     for phrase in junk_phrases:
         text = text.replace(phrase, "")
         
     return text.strip() if text.strip() else "Not available"
-
-
-
 
 def _extract_detail_item(soup, heading_text):
     """Helper to find a heading in the details list and return the next sibling's text."""
@@ -138,5 +130,5 @@ if __name__ == "__main__":
         company_data = extract_company_data(html_file_path)
         print(json.dumps(company_data, indent=2, ensure_ascii=False))
     else:
-        error_data = {"error": "No URL provided to the Python script."}
+        error_data = {"error": "No file path provided to the Python script."}
         print(json.dumps(error_data, indent=2))

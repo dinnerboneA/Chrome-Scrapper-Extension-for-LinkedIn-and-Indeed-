@@ -16,7 +16,7 @@ class PageController extends Controller
         $url = $request->input('url');
 
         if (!$htmlContent || !$url) {
-            return response()->json(['error' => 'Missing HTML or URL.'], 400);
+            return response()->json(['error' => 'Missing HTML or URL from extension.'], 400);
         }
 
         $scraperScript = '';
@@ -29,20 +29,18 @@ class PageController extends Controller
         } elseif (str_contains($url, 'indeed.com/cmp/')) {
             $scraperScript = 'indeed_company_scraper.py';
         } elseif (str_contains($url, 'indeed.') && str_contains($url, 'viewjob')) {
-            $scraperScript = 'indeed_job_scraper.py';                             
-            $tempFileName = 'temp_page_' . time() . '.html';                       
-            Storage::put('scraped_pages/' . $tempFileName, $htmlContent);          
-            $argument = Storage::path('scraped_pages/' . $tempFileName);           
+            $scraperScript = 'indeed_job_scraper.py';
         } else {
             return response()->json(['error' => 'This page type is not supported.'], 400);
         }
         
-        $newFileName = 'temp_page_' . time() . '.html';
-        Storage::put('scraped_pages/' . $newFileName, $htmlContent);
+        // This logic now applies to ALL scrapers
+        $tempFileName = 'temp_page_' . time() . '.html';
+        Storage::put('scraped_pages/' . $tempFileName, $htmlContent);
+        $argument = Storage::path('scraped_pages/' . $tempFileName);
         
         try {
-            $htmlFilePath = Storage::path('scraped_pages/' . $newFileName);
-            $process = new Process([base_path('venv/Scripts/python.exe'), base_path('scripts/' . $scraperScript), $htmlFilePath]);
+            $process = new Process([base_path('venv/Scripts/python.exe'), base_path('scripts/' . $scraperScript), $argument]);
             $process->run();
 
             if (!$process->isSuccessful()) {
@@ -59,11 +57,16 @@ class PageController extends Controller
             }
         } catch (\Exception $exception) {
             Log::error('A script error occurred: ' . $exception->getMessage());
-            return response()->json(['error' => 'The server script failed.'], 500);
+            return response()->json(['error' => 'The server script failed during execution.'], 500);
         } finally {
-            if (isset($newFileName)) {
-                Storage::delete('scraped_pages/' . $newFileName);
+            // This 'finally' block ensures the temp file is always deleted
+            if (isset($tempFileName)) {
+                Storage::delete('scraped_pages/' . $tempFileName);
             }
+        }
+
+        if ($data) {
+            Storage::put('last_profile.json', json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         }
 
         return response()->json($data);
