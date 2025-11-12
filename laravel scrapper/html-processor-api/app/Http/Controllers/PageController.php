@@ -34,11 +34,11 @@ class PageController extends Controller
             return response()->json(['error' => 'This page type is not supported.'], 400);
         }
         
-        // This logic now applies to ALL scrapers
         $tempFileName = 'temp_page_' . time() . '.html';
         Storage::put('scraped_pages/' . $tempFileName, $htmlContent);
         $argument = Storage::path('scraped_pages/' . $tempFileName);
         
+        $data = null;
         try {
             $process = new Process([base_path('venv/Scripts/python.exe'), base_path('scripts/' . $scraperScript), $argument]);
             $process->run();
@@ -59,7 +59,6 @@ class PageController extends Controller
             Log::error('A script error occurred: ' . $exception->getMessage());
             return response()->json(['error' => 'The server script failed during execution.'], 500);
         } finally {
-            // This 'finally' block ensures the temp file is always deleted
             if (isset($tempFileName)) {
                 Storage::delete('scraped_pages/' . $tempFileName);
             }

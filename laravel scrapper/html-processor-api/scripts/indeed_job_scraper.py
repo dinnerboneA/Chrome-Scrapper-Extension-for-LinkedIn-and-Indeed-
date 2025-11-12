@@ -5,6 +5,10 @@ import json
 import re
 from bs4 import BeautifulSoup
 
+# Reconfigure stdout to ensure UTF-8 output, solving encoding errors.
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 def clean(content):
     """
     Cleans text by preserving line breaks, fixing encoding errors,
@@ -16,23 +20,22 @@ def clean(content):
     text = ""
     # If content is a BeautifulSoup tag, process it to preserve line breaks
     if hasattr(content, 'find_all'):
-        # Convert <br> tags to a simple newline
-        for br in content.find_all("br"):
-            br.replace_with("\n")
-        # Get text, using a newline as a separator for block tags like <p> and <li>
-        text = content.get_text(separator="\n", strip=True)
+        # Convert <br>, <p>, and <li> tags to simple newlines
+        for tag in content.find_all(["br", "p", "li"]):
+            tag.replace_with(f"\n{tag.get_text(strip=True)}")
+        
+        text = content.get_text(strip=True)
     else:
         text = str(content)
 
-    # Fix any potential encoding errors in the scraped text
+    # Fix any potential encoding errors
     cleaned_content = text.encode('utf-8', 'replace').decode('utf-8')
 
-    # Replace multiple spaces and tabs, but keep the newlines
+    # Replace multiple spaces/tabs, but keep the newlines
     text = re.sub(r'[ \t]+', ' ', cleaned_content)
     # Condense multiple newlines into a maximum of two (a paragraph break)
-    text = re.sub(r'\n{3,}', '\n\n', text.strip())
+    text = re.sub(r'\n\s*\n', '\n\n', text.strip())
     
-    # Remove common junk phrases
     junk_phrases = ["Skip to main content", "See more", "...see more"]
     for phrase in junk_phrases:
         text = text.replace(phrase, "")
@@ -40,6 +43,7 @@ def clean(content):
     return text.strip() if text.strip() else "Not available"
 
 def extract_job_data(input_html_path):
+    """Main function to orchestrate Indeed job extraction from a local HTML file."""
     if not os.path.exists(input_html_path):
         return {"type": "indeed_job", "error": f"File not found at {input_html_path}"}
 
@@ -67,7 +71,6 @@ def extract_job_data(input_html_path):
         salary_info_div = soup.select_one("div#salaryInfoAndJobType")
         salary = clean(salary_info_div.select_one("span:first-child")) if salary_info_div else "Not available"
         job_type = clean(salary_info_div.select_one("span:last-child")) if salary_info_div else "Not available"
-        # Clean up the job type string which might have " - "
         if job_type:
             job_type = job_type.replace('-', '').strip()
     except Exception:
@@ -86,9 +89,9 @@ def extract_job_data(input_html_path):
         "location": location,
         "salary": salary,
         "job_type": job_type,
-        "date_posted": "Not available", # This info wasn't in the provided HTML
-        "applicants_count": "Not available", # This info isn't on Indeed
-        "experience_level": "Not available", # This info isn't in a consistent spot
+        "date_posted": "Not available", # This info wasn't in the original HTML sample
+        "applicants_count": "Not available", # Not available on Indeed
+        "experience_level": "Not available", # Not consistently available
         "job_description": job_description
     }
     return data

@@ -5,26 +5,41 @@ import json
 import re
 from bs4 import BeautifulSoup
 
-# Reconfigure stdout to ensure UTF-8 output
+# Reconfigure stdout to ensure UTF-8 output, solving encoding errors.
 if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 def clean(content):
-    """Clean text by stripping whitespace and fixing encoding errors."""
+    """
+    Cleans text by preserving line breaks, fixing encoding errors,
+    and normalizing whitespace.
+    """
     if not content:
         return "Not available"
-    if not isinstance(content, str):
-        content = str(content.get_text(separator=" ", strip=True)) if hasattr(content, "get_text") else str(content)
-    
-    # This finds any bad characters and replaces them, ensuring valid UTF-8
-    cleaned_content = content.encode('utf-8', 'replace').decode('utf-8')
-    
+
+    text = ""
+    # If content is a BeautifulSoup tag, process it to preserve line breaks
+    if hasattr(content, 'find_all'):
+        for br in content.find_all("br"):
+            br.replace_with("\n")
+        for p in content.find_all("p"):
+            p.replace_with(f"\n\n{p.get_text(strip=True)}")
+        text = content.get_text(separator="\n", strip=True)
+    else:
+        text = str(content)
+
+    # Fix any potential encoding errors
+    cleaned_content = text.encode('utf-8', 'replace').decode('utf-8')
+
+    # Replace multiple spaces/tabs, but keep the newlines
     text = re.sub(r'[ \t]+', ' ', cleaned_content)
+    # Condense multiple newlines into a maximum of two
     text = re.sub(r'\n{3,}', '\n\n', text.strip())
     
-    junk_phrases = ["Skip to main content", "See more", "...see more"]
+    junk_phrases = ["Skip to main content", "See more", "...see more", "Show more"]
     for phrase in junk_phrases:
-        text = text.replace(phrase, "")
+        # Use a case-insensitive replace to catch variations
+        text = re.sub(r'\b' + re.escape(phrase) + r'\b', '', text, flags=re.IGNORECASE)
         
     return text.strip() if text.strip() else "Not available"
 
@@ -33,6 +48,7 @@ def _extract_detail_with_testid(soup, test_id):
     try:
         item = soup.select_one(f"li[data-testid='{test_id}']")
         if item:
+            # The value is usually in the last div or span inside the list item
             value_element = item.find_all(["div", "span"])[-1]
             return clean(value_element)
     except Exception:
@@ -40,7 +56,7 @@ def _extract_detail_with_testid(soup, test_id):
     return "Not available"
 
 def extract_company_data(input_html_path):
-    """Main function to orchestrate Indeed company page extraction."""
+    """Main function to orchestrate Indeed company page extraction from a local HTML file."""
     if not os.path.exists(input_html_path):
         return {"type": "indeed_company", "error": f"File not found at {input_html_path}"}
 
@@ -49,11 +65,16 @@ def extract_company_data(input_html_path):
 
     soup = BeautifulSoup(html, "lxml")
 
-    try: company_name = clean(soup.select_one('div[itemprop="name"]'))
-    except Exception: company_name = "Not available"
+    # --- Extract all fields safely ---
+    try:
+        company_name = clean(soup.select_one('div[itemprop="name"]'))
+    except Exception:
+        company_name = "Not available"
 
-    try: logo_url = soup.select_one('div.css-19l789z img[itemprop="image"]')["src"]
-    except Exception: logo_url = "Not available"
+    try:
+        logo_url = soup.select_one('div[data-testid="cmp-HeaderLayout-sticky"] img, div.css-9wofke img')['src']
+    except Exception:
+        logo_url = "Not available"
 
     about = "Not available"
     try:
@@ -75,8 +96,11 @@ def extract_company_data(input_html_path):
         industry, company_size, headquarters, founded = ("Not available",) * 4
 
     try:
-        website_element = soup.find('a', attrs={'data-testid': 'companyLink[]'})
-        website = website_element['href'] if website_element else "Not available"
+        if details_section:
+            website_element = details_section.find('a', attrs={'data-testid': 'companyLink[]'})
+            website = website_element['href'] if website_element else "Not available"
+        else:
+            website = "Not available"
     except Exception:
         website = "Not available"
         

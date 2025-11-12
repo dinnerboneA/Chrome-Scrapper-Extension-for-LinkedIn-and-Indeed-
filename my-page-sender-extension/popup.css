@@ -1,4 +1,3 @@
-/* --- Root Variables for Easy Customization --- */
 :root {
   --background-color: #1a1b1e;
   --card-color: #2a2b2e;
@@ -8,7 +7,6 @@
   --border-color: #3a3b3e;
 }
 
-/* --- Base Styles --- */
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   width: 380px;
@@ -18,323 +16,241 @@ body {
   background-color: var(--background-color);
   color: var(--primary-text);
   position: relative;
+  overflow: hidden; 
 }
 
-.hidden {
-  display: none !important;
-}
-
-hr {
-  border: 0;
-  border-top: 1px solid var(--border-color);
-  margin: 15px 0;
-}
-
-/* --- Header & Reload Button --- */
-#header {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 3;
-}
-#reload-btn {
-  width: 32px;
-  height: 32px;
-  padding: 5px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  border-radius: 50%;
-  transition: transform 0.3s ease, background-color 0.2s;
-  color: white;
-}
-#reload-btn:hover {
-  transform: rotate(180deg);
-  background-color: rgba(255, 255, 255, 0.1);
-}
-#reload-btn svg {
-  width: 100%;
-  height: 100%;
-  stroke: currentColor;
-  stroke-width: 2.5;
-}
-
-/* --- Main "Send Website" Button --- */
-#main-content {
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 250px;
-}
-#send-website-btn {
-  background-color: var(--accent-color);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-#send-website-btn:hover {
-  background-color: #6a52e0;
-}
-
-/* --- Loading Spinner --- */
+/* --- Loading Spinner & Text Styles (Unchanged) --- */
 #loading-content {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(26, 27, 30, 0.8);
+  background-color: rgba(26, 27, 30, 0.9);
   z-index: 10;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 20px; 
 }
-#loading-content p {
-  display: none;
-}
-#loading-content::after {
-  content: '';
-  width: 30px;
-  height: 30px;
-  border: 4px solid var(--border-color);
+
+.loader-spinner {
+  width: 40px;
+  height: 40px;
+  border: 5px solid var(--border-color);
   border-top-color: var(--accent-color);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin-fast 0.6s linear infinite;
 }
-@keyframes spin {
+
+#loading-message {
+  font-size: 16px;
+  color: var(--primary-text);
+  font-weight: 500;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* --- Success Animation Styles (Unchanged) --- */
+.success-animation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+.checkmark {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 3;
+  stroke: #4BB543; 
+  stroke-miterlimit: 10;
+  animation: scale .3s ease-in-out .9s both;
+  margin: 0 auto;
+}
+.checkmark__circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 3;
+  stroke-miterlimit: 10;
+  stroke: var(--border-color);
+  fill: none;
+  animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+.checkmark__check {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+}
+@keyframes stroke {
+  100% { stroke-dashoffset: 0; }
+}
+@keyframes scale {
+  0%, 100% { transform: none; }
+  50% { transform: scale3d(1.1, 1.1, 1); }
+}
+
+/* --- Keyframes (Unchanged) --- */
+@keyframes spin-fast {
   to {
     transform: rotate(360deg);
   }
 }
-
-/* --- Result Area --- */
-#result-content {
-  text-align: left;
-  max-height: 500px;
-  overflow-y: auto;
-  padding: 0 20px 20px 20px;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- Image Header (Person & Company) --- */
-.profile-header {
-  position: relative;
-  margin: 0 -20px;
-  text-align: center;
-}
-.profile-header:empty {
-  display: none;
-}
-.profile-header::after {
-  content: '';
+.hidden { display: none !important; }
+hr { border: 0; border-top: 1px solid var(--border-color); margin: 15px 0; }
+.artdeco-button { width: 100%; border: none; border-radius: 8px; padding: 12px 24px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease; box-sizing: border-box; }
+.artdeco-button--primary { background-color: var(--accent-color); color: white; }
+.artdeco-button--primary:hover { background-color: #6a52e0; }
+#scrape-by-url-section { padding: 15px 20px 0 20px; }
+#url-input { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--card-color); color: var(--primary-text); font-size: 14px; box-sizing: border-box; }
+#scrape-url-btn { background-color: var(--border-color); color: var(--primary-text); }
+#scrape-url-btn:hover { background-color: #4a4b4e; }
+.divider { display: flex; align-items: center; text-align: center; color: var(--secondary-text); padding: 15px 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+.divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--border-color); }
+.divider:not(:empty)::before { margin-right: .5em; }
+.divider:not(:empty)::after { margin-left: .5em; }
+#main-content { padding: 0 20px 15px 20px; }
+
+/* --- MODIFIED: Header Styles --- */
+#header {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 80px;
-  background: linear-gradient(to bottom, transparent 0%, var(--background-color) 95%);
-  pointer-events: none;
-  z-index: 2;
-}
-.cover-pic {
-  width: 100%;
-  height: 120px;
-  object-fit: cover;
-  display: block;
-}
-.profile-pic {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 4px solid var(--background-color);
-  position: relative;
+  top: 10px;
+  left: 10px;
+  right: 10px;
   z-index: 3;
-  margin: 10px auto;
-}
-.cover-pic + .profile-pic {
-  margin-top: -50px;
-}
-
-/* --- Main Typography --- */
-h3 {
-  margin-top: 20px;
-  margin-bottom: 10px;
-  color: var(--primary-text);
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 5px;
-}
-
-/* --- Person/Company Profile Styles --- */
-.profile-name, .job-title {
-  text-align: center;
-  margin-top: 10px;
-  margin-bottom: 0;
-  font-size: 20px;
-}
-.profile-headline, .job-company {
-  text-align: center;
-  font-size: 14px;
-  color: var(--secondary-text);
-  margin-top: 5px;
-}
-.profile-location {
-  text-align: center;
-  font-size: 12px;
-  color: var(--secondary-text);
-  margin-top: 8px;
-}
-.profile-industry {
-  text-align: center;
-  font-size: 13px;
-  color: var(--secondary-text);
-  margin-top: 8px;
-  font-weight: 500;
-}
-.profile-about, .item-details, .job-description {
-  font-size: 13px;
-  white-space: pre-wrap;
-  line-height: 1.5;
-  color: #c0c0c0;
-}
-.item-details {
-  background-color: var(--card-color);
-  padding: 10px;
-  border-radius: 6px;
-  margin-top: 8px;
-}
-
-/* --- Experience & Education Items --- */
-.item {
-  margin-bottom: 15px;
-}
-.item strong {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--primary-text);
-}
-.item div {
-  font-size: 13px;
-  color: var(--secondary-text);
-}
-.item-dates, .item-location {
-  font-size: 12px;
-  color: var(--secondary-text);
-}
-
-/* --- Job Posting Styles --- */
-.job-sub-header {
+  /* height: 32px; */ /* <-- THIS LINE WAS REMOVED */
   display: flex;
-  justify-content: center;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--secondary-text);
-  margin-top: 8px;
-}
-.job-sub-header span {
-  border-right: 1px solid var(--border-color);
-  padding-right: 10px;
-}
-.job-sub-header span:last-child {
-  border-right: none;
-}
-.job-details-list {
-  list-style: none;
-  padding: 0;
-  margin: 15px 0;
-  font-size: 14px;
-}
-.job-details-list li {
-  margin-bottom: 5px;
-  color: var(--secondary-text);
-}
-.job-details-list li strong {
-  color: var(--primary-text);
+  justify-content: space-between;
+  align-items: flex-start; /* <-- THIS LINE WAS CHANGED */
 }
 
-/* --- Company Page Styles --- */
-.follower-count {
-  text-align: center;
-  font-size: 12px;
-  color: var(--secondary-text);
-  margin-top: 8px;
-  font-weight: 600;
-}
-.company-details-list {
-  list-style: none;
-  padding: 0;
-  margin: 15px 0;
-  font-size: 14px;
-}
-.company-details-list li {
-  margin-bottom: 8px;
-  color: var(--secondary-text);
-  line-height: 1.4;
-}
-.company-details-list li strong {
-  color: var(--primary-text);
-}
-.company-details-list a {
-  color: var(--accent-color);
-  text-decoration: none;
-}
-.company-details-list a:hover {
-  text-decoration: underline;
+/* --- NEW: Style for the left-side group --- */
+.header-left {
+  display: flex;
+  flex-direction: column; /* This stacks the buttons vertically */
+  gap: 8px; 
 }
 
-/* --- Custom Scrollbar --- */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-
-
-.copiable-line {
-  position: relative;
-}
-
-.copy-btn {
-  position: absolute;
-  top: 50%;
-  right: -5px; 
-  transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
-  padding: 4px;
+#reload-btn, #home-btn, #transfer-data-btn {
+  width: 32px;
+  height: 32px;
+  padding: 5px;
   border: none;
-  background: none;
+  background-color: rgba(255, 255, 255, 0.05);
   cursor: pointer;
   border-radius: 50%;
-  opacity: 0; 
-  transition: opacity 0.2s ease;
+  transition: transform 0.3s ease, background-color 0.2s, box-shadow 0.3s ease;
+  color: white;
+  box-sizing: border-box;
 }
 
-.copiable-line:hover .copy-btn {
-  opacity: 0.6;
+#reload-btn {
+  font-size: 20px; /* This was in your original code, so we keep it */
 }
 
-.copy-btn:hover {
-  opacity: 1;
-  background-color: var(--card-color);
+#reload-btn:hover, #home-btn:hover, #transfer-data-btn:hover { 
+  background-color: rgba(255, 255, 255, 0.1); 
 }
+#reload-btn.reload-icon:hover { transform: rotate(180deg); }
 
-.copy-btn svg {
+#reload-btn img, #home-btn svg, #transfer-data-btn svg {
   width: 100%;
   height: 100%;
-  stroke: var(--primary-text);
+  stroke: currentColor;
+  stroke-width: 2.5;
 }
+
+/* Glow Animation for Transfer Button */
+#transfer-data-btn {
+  background-color: var(--accent-color);
+  box-shadow: 0 0 8px var(--accent-color);
+  animation: glow 1s infinite alternate;
+}
+
+#transfer-data-btn:hover {
+  background-color: #6a52e0; 
+  box-shadow: 0 0 15px var(--accent-color);
+}
+
+#transfer-data-btn svg {
+  transform: rotate(-15deg);
+  position: relative;
+  left: -1px;
+  top: 1px;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 5px var(--accent-color), 0 0 10px var(--accent-color);
+  }
+  to {
+    box-shadow: 0 0 15px var(--accent-color), 0 0 25px var(--accent-color);
+  }
+}
+/* --- END MODIFIED SECTION --- */
+
+
+/* --- All Other Styles are Unchanged --- */
+#result-content { text-align: left; max-height: 500px; overflow-y: auto; padding: 0 20px 20px 20px; }
+.profile-header { position: relative; margin: 0 -20px; text-align: center; }
+.profile-header:empty { display: none; }
+.profile-header::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 80px; background: linear-gradient(to bottom, transparent 0%, var(--background-color) 95%); pointer-events: none; z-index: 2; }
+.cover-pic { width: 100%; height: 120px; object-fit: cover; display: block; }
+.profile-pic { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 4px solid var(--background-color); position: relative; z-index: 3; margin: 10px auto; }
+.cover-pic + .profile-pic { margin-top: -50px; }
+.profile-name, .job-title { text-align: center; margin-top: 10px; margin-bottom: 0; font-size: 20px; }
+.profile-headline, .job-company { text-align: center; font-size: 14px; color: var(--secondary-text); margin-top: 5px; }
+.profile-location, .profile-industry, .follower-count { text-align: center; font-size: 12px; color: var(--secondary-text); margin-top: 8px; }
+.profile-about, .item-details, .job-description { font-size: 13px; white-space: pre-wrap; line-height: 1.5; color: #c0c0c0; }
+.item-details { background-color: var(--card-color); padding: 10px; border-radius: 6px; margin-top: 8px; }
+.item { margin-bottom: 15px; }
+.item strong { font-size: 15px; font-weight: 600; color: var(--primary-text); }
+.item div { font-size: 13px; color: var(--secondary-text); }
+.item-dates, .item-location { font-size: 12px; color: var(--secondary-text); }
+.job-sub-header { display: flex; justify-content: center; gap: 10px; font-size: 12px; color: var(--secondary-text); margin-top: 8px; }
+.job-sub-header span { border-right: 1px solid var(--border-color); padding-right: 10px; }
+.job-sub-header span:last-child { border-right: none; }
+.job-details-list, .company-details-list { list-style: none; padding: 0; margin: 15px 0; font-size: 14px; }
+.job-details-list li, .company-details-list li { margin-bottom: 8px; color: var(--secondary-text); line-height: 1.4; }
+.job-details-list li strong, .company-details-list li strong { color: var(--primary-text); }
+.company-details-list a { color: var(--accent-color); text-decoration: none; }
+.company-details-list a:hover { text-decoration: underline; }
+
+/* --- NEW: Skills & Languages Styles --- */
+.skills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+.skill-pill {
+  background-color: var(--card-color);
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--secondary-text);
+}
+/* Languages will use the existing .item style */
+/* --- END NEW STYLES --- */
+
+
+
+.copiable-line { position: relative; }
+.copy-btn { position: absolute; top: 50%; right: -5px; transform: translateY(-50%); width: 28px; height: 28px; padding: 4px; border: none; background: none; cursor: pointer; border-radius: 50%; opacity: 0; transition: opacity 0.2s ease; }
+.copiable-line:hover .copy-btn { opacity: 0.6; }
+.copy-btn:hover { opacity: 1; background-color: var(--card-color); }
+.copy-btn svg { width: 100%; height: 100%; stroke: var(--primary-text); }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
+.error-message { padding: 20px; }

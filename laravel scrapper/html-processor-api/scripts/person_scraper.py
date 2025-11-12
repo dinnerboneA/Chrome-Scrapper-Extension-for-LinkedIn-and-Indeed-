@@ -14,43 +14,68 @@ import difflib
 from datetime import datetime
 from bs4 import BeautifulSoup
 
-# Utility functions
 
 
-def clean(content):
+
+
+# --- NEW: Function to determine highest education level ---
+def get_highest_education_level(education_list):
     """
-    Cleans text by preserving line breaks, fixing encoding errors,
-    and normalizing whitespace.
+    Analyzes a list of education entries and returns the slug for the highest level.
+    e.g., 'bachelor', 'master', 'phd'
     """
-    if not content:
+    if not education_list:
         return "Not available"
 
+    # Define the hierarchy and keywords for each level.
+    # The key is the value your <SelectItem> expects in React.
+    hierarchy = {
+        'phd': {'rank': 5, 'keywords': ['phd', 'doctorate', 'd.phil']},
+        'master': {'rank': 4, 'keywords': ['master', 'm.sc', 'm.a.', 'mba', 'meng']},
+        'bachelor': {'rank': 3, 'keywords': ["bachelor", "b.sc", "b.a.", "beng", "llb", "bachelor of science"]},
+        'associate': {'rank': 2, 'keywords': ['associate', 'diploma']},
+        'high_school': {'rank': 1, 'keywords': ['high school', 'a-level', 'foundation']}
+    }
+
+    highest_rank = 0
+    highest_level_slug = "Not available"
+
+    for edu_item in education_list:
+        degree_text = edu_item.get('degree', '').lower()
+        if not degree_text:
+            continue
+        
+        for slug, data in hierarchy.items():
+            if any(keyword in degree_text for keyword in data['keywords']):
+                if data['rank'] > highest_rank:
+                    highest_rank = data['rank']
+                    highest_level_slug = slug
+    
+    return highest_level_slug
+# --- END OF NEW FUNCTION ---
+
+# Utility functions (Unchanged)
+def clean(content):
+    if not content:
+        return "Not available"
     text = ""
-    # If content is a BeautifulSoup tag, process it to preserve line breaks
     if hasattr(content, 'find_all'):
-        # Convert <br> tags to a simple newline
         for br in content.find_all("br"):
             br.replace_with("\n")
-        # Get text, using a newline as a separator for block tags like <p> and <div>
+        # --- MODIFICATION: Added <li> and <p> to preserve formatting ---
+        for tag in content.find_all(["p", "li"]):
+            tag.replace_with(f"\n{tag.get_text(strip=True)}")
         text = content.get_text(separator="\n", strip=True)
+        # --- END OF MODIFICATION ---
     else:
         text = str(content)
-
-    # Fix any potential encoding errors in the scraped text
     cleaned_content = text.encode('utf-8', 'replace').decode('utf-8')
-
     text = re.sub(r'[ \t]+', ' ', cleaned_content)
     text = re.sub(r'\n{3,}', '\n\n', text.strip())
-
-    # Remove common junk phrases
-    junk_phrases = [
-        "Skip to main content", "See more", "...see more"
-    ]
+    junk_phrases = ["Skip to main content", "See more", "...see more"]
     for phrase in junk_phrases:
-        text = text.replace(phrase, "")
-        
+        text = re.sub(r'\b' + re.escape(phrase) + r'\b', '', text, flags=re.IGNORECASE)
     return text.strip() if text.strip() else "Not available"
-
 
 def parse_date_range(text):
     date_from, date_to, is_current = "Not available", "Not available", False
@@ -126,141 +151,78 @@ def is_about_duplicate(about, experiences, educations, threshold=SIMILARITY_THRE
                 return True
     return False
 
-
-# Extraction functions
-
+# Extraction functions (Unchanged)
 def extract_basic_info(soup):
     name = clean(soup.select_one("h1, .pv-text-details__left-panel h1"))
     headline = clean(soup.select_one(".text-body-medium, .pv-text-details__left-panel div"))
     location = clean(soup.select_one(".text-body-small.inline, .pv-top-card--list-panel li"))
-    
-    # This selector tries to find the main profile image.
     profile_pic_element = soup.select_one("img[class*='pv-top-card-profile-picture__image']")
     profile_pic_url = profile_pic_element['src'] if profile_pic_element else "Not available"
-    
     cover_pic_element = soup.select_one("img.profile-background-image__image")
     cover_pic_url = cover_pic_element['src'] if cover_pic_element else "Not available"
-    
-    
     return name, headline, location, profile_pic_url, cover_pic_url
 
-
-
-
-
-
 def extract_about(soup):
-    """
-    Finds the "About" section using its unique ID to avoid confusion
-    with other sections like "Activity".
-    """
-    # 1. Find the unique anchor div with id="about". This is our reliable starting point.
     about_anchor = soup.find("div", id="about")
     if not about_anchor:
-        return "Not available" # If this anchor doesn't exist, there is no About section.
-
-    # 2. From the anchor, find the parent <section> tag that contains the entire "About" block.
-    # This isolates our search to only this section.
+        return "Not available"
     about_section = about_anchor.find_parent("section")
     if not about_section:
         return "Not available"
-
-    # 3. Within this specific section, find the container with the actual text.
-    # The text is typically inside a span with aria-hidden="true" to be visible.
     text_container = about_section.select_one("div.inline-show-more-text span[aria-hidden='true']")
-    
     if text_container:
         text = text_container.get_text(separator=" ", strip=True)
-        # Check for a reasonable length to ensure it's not just an empty span
         if len(text) > 20:
-            return clean(text)
-
-    # Fallback for a slightly different structure sometimes seen
-    # (Looks for the text in a more generic div if the specific one isn't found)
+            return clean(text_container)
     alt_container = about_section.select_one("div.display-flex.ph5.pv3 span[aria-hidden='true']")
     if alt_container:
         text = alt_container.get_text(separator=" ", strip=True)
         if len(text) > 20:
-            return clean(text)
-
-    # If neither of the precise methods work, return "Not available"
+            return clean(alt_container)
     return "Not available"
-
-
-
-
-
 
 def extract_experience(soup):
     experiences = []
     seen = set()
-
     experience_anchor = soup.find("div", id="experience")
     if not experience_anchor:
         return []
-
     experience_section = experience_anchor.find_parent("section")
     if not experience_section:
         return []
-
     job_items = experience_section.select("ul > li.artdeco-list__item")
-
     for item in job_items:
         role_element = item.select_one("div.display-flex.mr1 span[aria-hidden='true']")
         role = clean(role_element) if role_element else "Not available"
-
         company_element = item.select_one("span.t-14.t-normal:not(.t-black--light) span[aria-hidden='true']")
         company_parts = clean(company_element).split('·')
         company_name = company_parts[0].strip() if company_parts else "Not available"
         job_type = company_parts[1].strip() if len(company_parts) > 1 else "Not available"
-
         sub_captions = item.select("span.t-14.t-normal.t-black--light span[aria-hidden='true']")
         date_text = clean(sub_captions[0]) if sub_captions else ""
         location = clean(sub_captions[1]) if len(sub_captions) > 1 else "Not available"
-
         date_from, date_to, is_current = parse_date_range(date_text)
-
-        # --- DETAILS EXTRACTION ---
         details = "Not available"
-        # First, try the specific selector that works for the "before" (collapsed) state.
         details_element = item.select_one("div[class*='inline-show-more-text'] span[aria-hidden='true']")
         if details_element:
             details = clean(details_element)
         else:
-            # If that fails, it's likely the "after" (expanded) state.
-            # We'll find all the text blocks in the sub-components and pick the longest one,
-            # which is almost always the description.
             sub_components = item.select_one("div.pvs-entity__sub-components")
             if sub_components:
                 potential_details = sub_components.find_all("span", {"aria-hidden": "true"})
                 longest_text = ""
                 for span in potential_details:
                     text = clean(span)
-                    # Filter out short text and "skills" text
                     if len(text) > len(longest_text) and "skills" not in text.lower():
                         longest_text = text
                 if longest_text:
                     details = longest_text
-
-
         identifier = (role, company_name, date_from)
         if role == "Not available" or company_name == "Not available" or identifier in seen:
             continue
         seen.add(identifier)
-
-        experiences.append({
-            "company_name": company_name,
-            "company_location": location,
-            "job_type": job_type,
-            "role": role,
-            "date_from": date_from,
-            "date_to": date_to,
-            "details": details,
-            "is_current": is_current
-        })
-
+        experiences.append({ "company_name": company_name, "company_location": location, "job_type": job_type, "role": role, "date_from": date_from, "date_to": date_to, "details": details, "is_current": is_current })
     return experiences
-
 
 def extract_education(soup):
     educations, seen = [], set()
@@ -291,31 +253,84 @@ def extract_education(soup):
         educations.append({"institution_name": institution, "degree": degree, "date_from": date_from, "date_to": date_to, "details": details, "is_current": is_current})
     return educations
 
+# --- NEW FUNCTION: Extract Skills ---
+def extract_skills(soup):
+    """
+    Extracts the list of skills from the profile.
+    """
+    skills = []
+    try:
+        skills_anchor = soup.find("div", id="skills")
+        if not skills_anchor:
+            return []
+        
+        skills_section = skills_anchor.find_parent("section")
+        if not skills_section:
+            return []
+            
+        skill_elements = skills_section.select("a[data-field='skill_card_skill_topic'] span[aria-hidden='true']")
+        for el in skill_elements:
+            skill_name = clean(el)
+            if skill_name != "Not available":
+                skills.append(skill_name)
+    except Exception:
+        pass # Return empty list if any error occurs
+    return skills
+# --- END OF NEW FUNCTION ---
+
+# --- NEW FUNCTION: Extract Languages ---
+def extract_languages(soup):
+    """
+    Extracts the list of languages and their proficiency.
+    """
+    languages = []
+    try:
+        languages_anchor = soup.find("div", id="languages")
+        if not languages_anchor:
+            return []
+
+        languages_section = languages_anchor.find_parent("section")
+        if not languages_section:
+            return []
+
+        lang_items = languages_section.select("ul > li")
+        for item in lang_items:
+            name_el = item.select_one("div.t-bold span[aria-hidden='true']")
+            prof_el = item.select_one("span.pvs-entity__caption-wrapper[aria-hidden='true']")
+            
+            name = clean(name_el)
+            proficiency = clean(prof_el)
+            
+            if name != "Not available":
+                languages.append({"language": name, "proficiency": proficiency})
+    except Exception:
+        pass
+    return languages
+# --- END OF NEW FUNCTION ---
 
 # Main Orchestration
-
 def extract_profile(input_html_path):
-
     print(f"Python script started. Attempting to process file: {input_html_path}", file=sys.stderr)
-
     if not os.path.exists(input_html_path):
-
         print(f"Error: The file path does not exist on the server.", file=sys.stderr)
         return {"error": f"File not found at {input_html_path}"}
-
     with open(input_html_path, "r", encoding="utf-8") as f:
         html = f.read()
-
     soup = BeautifulSoup(html, "lxml")
     
     name, headline, location, profile_pic_url, cover_pic_url = extract_basic_info(soup)
-
     about = extract_about(soup)
     experience = extract_experience(soup)
     education = extract_education(soup)
-
+    
+    # --- MODIFICATION: Call new functions ---
+    skills = extract_skills(soup)
+    languages = extract_languages(soup)
+    
     if is_about_duplicate(about, experience, education, threshold=SIMILARITY_THRESHOLD):
         about = "Not available"
+
+    highest_education = get_highest_education_level(education)
 
     data = {
         "type": "person", 
@@ -326,20 +341,22 @@ def extract_profile(input_html_path):
         "cover_pic_url": cover_pic_url,
         "about": about,
         "experience": experience,
-        "education": education
+        "education": education,
+        "highest_education_level": highest_education,
+        # --- MODIFICATION: Add new data to the final JSON ---
+        "skills": skills,
+        "languages": languages
     }
     
     print("Python script finished. Returning JSON data.", file=sys.stderr)
     return data
 
-# Script Entry Point
+# Script Entry Point (Unchanged)
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         html_file_path = sys.argv[1]
         profile_data = extract_profile(html_file_path)
-        # Print the final dictionary as a JSON string to standard output
         print(json.dumps(profile_data, indent=2, ensure_ascii=False))
     else:
-        # Print an error message if no file path is provided
         error_data = {"error": "No file path provided to the Python script."}
         print(json.dumps(error_data, indent=2))

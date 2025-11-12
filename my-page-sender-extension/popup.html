@@ -6,18 +6,40 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div id="header">
-    <button id="reload-btn" title="Reload Data">⟳</button>
+  <div id="header" class="hidden">
+    
+    <div class="header-left"> 
+      <button id="reload-btn" title="Reload Data">⟳</button>
+      <button id="transfer-data-btn" class="hidden" title="Transfer Data to Form">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+        </svg>
+      </button>
+    </div>
+    
+    <button id="home-btn" title="Go Home">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+    </button>
   </div>
 
-  <div id="main-content">
-    <button id="send-website-btn">Send Website</button>
-  </div>
-  <div id="loading-content" class="hidden">
-    <p>Loading...</p>
-  </div>
-  <div id="result-content" class="hidden">
+  <div id="initial-view">
+    <div id="scrape-by-url-section">
+      <input type="text" id="url-input" placeholder="Paste a profile or job URL...">
+      <button id="scrape-url-btn" class="artdeco-button">Scrape From URL</button>
     </div>
+
+    <div id="scrape-current-page-container" class="hidden">
+      <div class="divider"><span>OR</span></div>
+      <div id="main-content">
+        <button id="send-website-btn" class="artdeco-button artdeco-button--primary">Scrape Current Page</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loading-content" class="hidden"></div>
+  <div id="result-content"></div>
   
   <script src="popup.js"></script>
 </body>
